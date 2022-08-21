@@ -1,7 +1,7 @@
 all: main
 
 main: main.cc
-	clang++ -g -pthread $< -o $@
+	clang++ -g -pthread $< -o $@ -static
 
 .PHONY: clean
 
