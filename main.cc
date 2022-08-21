@@ -39,6 +39,7 @@ __asm__(
 __asm__(
   "\t.type trampoline_preempt,@function\n"
   "trampoline_preempt:\n"
+  "mov $0x1, %eax\n"
   "\tret # Just return on the system stack\n"
 );
 
@@ -61,16 +62,21 @@ std::atomic<bool> ready;
 std::atomic<size_t> counter;
 size_t preempted = 0;
 size_t rip = REG_RIP;
+bool res;
 
 /// Not doing much
 void routine(void)
 {
-  std::cout << "Transitionned into the routine" << REG_RIP << std::endl;
+  std::cout << "Transitionned into the routine" << std::endl;
   ready = true;
   while(counter == 0)
   {} 
   std::cout << "After the while loop" << std::endl;
+  res = false;
   to_system(stacks.system);
+
+  // Should never reach here
+  abort();
 }
 
 /// Signal handler
@@ -79,16 +85,16 @@ static void signal_handler(int sig, siginfo_t* info, void* _context)
   
   ucontext_t* context = (ucontext_t*) _context;
   memcpy(&stacks.context, context, sizeof(ucontext_t));
-  context->uc_mcontext.gregs[REG_RAX] = 0x1;
+  //context->uc_mcontext.gregs[REG_RAX] = 0x1;
   context->uc_mcontext.gregs[REG_RSP] = (greg_t) stacks.system;
   context->uc_mcontext.gregs[REG_RIP] = (greg_t) trampoline_preempt;
   preempted++;
 }
 
-bool switcher()
+void switcher()
 {
   setcontext(&stacks.context); 
-  return false;
+  res = false;
 }
 
 void* scheduler(void* _unused)
@@ -109,17 +115,17 @@ void* scheduler(void* _unused)
     abort();
   
   counter = 0;
-  bool res = true;
+  res = true;
   
   while(res) {
     /// Switch to the behaviour.
     if (counter == 0)
     {
-      res = to_behaviour(&stacks.system, stacks.behaviour+STACKSIZE, routine);
+      to_behaviour(&stacks.system, stacks.behaviour+STACKSIZE, routine);
       counter++;
     }
     else
-      res = switcher();
+      switcher();
   }
   
   std::cout << "About to finish" << std::endl; 
