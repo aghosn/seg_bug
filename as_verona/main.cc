@@ -83,6 +83,8 @@ static void signal_handler(int sig, siginfo_t* info, void* _context)
   context->uc_mcontext.gregs[REG_RSP] = (greg_t) stacks.system;
   context->uc_mcontext.gregs[REG_RIP] = (greg_t) trampoline_preempt;
   preempted++;
+  sigemptyset(&context->uc_sigmask);
+  setcontext(context);
 }
 
 bool switcher()
