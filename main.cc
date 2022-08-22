@@ -91,6 +91,11 @@ bool switcher()
   return false;
 }
 
+_BYTE* align(_BYTE* value, int alignment)
+{
+  return (value - (((uint64_t)value)% alignment));
+}
+
 void* scheduler(void* _unused)
 {
   /// Allocate the stacks.
@@ -115,7 +120,8 @@ void* scheduler(void* _unused)
     /// Switch to the behaviour.
     if (counter == 0)
     {
-      res = to_behaviour(&stacks.system, stacks.behaviour+STACKSIZE-8, routine);
+      _BYTE* aligned = align(stacks.behaviour+STACKSIZE, 16);
+      res = to_behaviour(&stacks.system, aligned, routine);
       counter++;
     }
     else
