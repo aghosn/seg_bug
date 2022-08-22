@@ -115,7 +115,7 @@ void* scheduler(void* _unused)
     /// Switch to the behaviour.
     if (counter == 0)
     {
-      res = to_behaviour(&stacks.system, stacks.behaviour+STACKSIZE, routine);
+      res = to_behaviour(&stacks.system, stacks.behaviour+STACKSIZE-8, routine);
       counter++;
     }
     else
