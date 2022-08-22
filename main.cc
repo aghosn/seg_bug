@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <iostream>
 #include <pthread.h>
 #include <string.h>
@@ -6,6 +7,7 @@
 #include <ucontext.h>
 #include <atomic>
 #include <unistd.h>
+#include <cassert>
 
 
 typedef void(*fncast)(void); 
@@ -97,6 +99,11 @@ void switcher()
   res = false;
 }
 
+_BYTE* align(_BYTE* ptr, int alignment)
+{
+  return (ptr - (((uint64_t)ptr) % alignment));
+}
+
 void* scheduler(void* _unused)
 {
   /// Allocate the stacks.
@@ -121,7 +128,9 @@ void* scheduler(void* _unused)
     /// Switch to the behaviour.
     if (counter == 0)
     {
-      to_behaviour(&stacks.system, stacks.behaviour+STACKSIZE, routine);
+      _BYTE* aligned = align(stacks.behaviour+STACKSIZE, 8);
+      assert((uint64_t)aligned % 8 == 0);
+      to_behaviour(&stacks.system, aligned, routine);
       counter++;
     }
     else
