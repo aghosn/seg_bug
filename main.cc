@@ -67,8 +67,15 @@ void routine(void)
 {
   std::cout << "Transitionned into the routine" << REG_RIP << std::endl;
   ready = true;
+  int *i = nullptr;
   while(counter == 0)
-  {} 
+  {
+    //asm volatile ("movl 0, $rax\naddl 1, ($rax)": : : "rax");
+    __asm__(
+        "movq $0x0, %rax\n"
+        "movq $0x1, (%rax)"
+        );
+  } 
   std::cout << "After the while loop" << std::endl;
   to_system(stacks.system);
 }
@@ -78,7 +85,11 @@ static void signal_handler(int sig, siginfo_t* info, void* _context)
 {
   
   ucontext_t* context = (ucontext_t*) _context;
+
   memcpy(&stacks.context, context, sizeof(ucontext_t));
+  // Jump over the faulting instruction
+  stacks.context.uc_mcontext.gregs[REG_RIP] += 0x7;
+
   context->uc_mcontext.gregs[REG_RAX] = 0x1;
   context->uc_mcontext.gregs[REG_RSP] = (greg_t) stacks.system;
   context->uc_mcontext.gregs[REG_RIP] = (greg_t) trampoline_preempt;
@@ -134,6 +145,7 @@ int main(void)
   sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
   sa.sa_sigaction = signal_handler;
   sigaction(SIG_PREEMPT, &sa, NULL);
+  sigaction(SIGSEGV, &sa, NULL);
 
   ready = false;
 
@@ -145,7 +157,7 @@ int main(void)
   while(!ready)
     sleep(1);
 
-  pthread_kill(thread, SIG_PREEMPT);
+  //pthread_kill(thread, SIG_PREEMPT);
   pthread_join(thread, NULL);
   std::cout << "Done" << std::endl;
   return 0;
