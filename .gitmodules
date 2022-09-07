@@ -1,0 +1,3 @@
+[submodule "wasm/my_snmalloc_test/external/snmalloc"]
+	path = wasm/my_snmalloc_test/external/snmalloc
+	url = https://github.com/microsoft/snmalloc.git
