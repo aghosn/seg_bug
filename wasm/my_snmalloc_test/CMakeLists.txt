@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8.0)
 project(snmalloc-test LANGUAGES C CXX)
 
+set(CMAKE_CXX_STANDARD 20)
 set(MY_TARGET my_main)
 set(MY_SOURCES src/main.cc)
 include_directories(AFTER "${CMAKE_SOURCE_DIR}/external/snmalloc/src")
