@@ -1,11 +1,19 @@
+#include <cstdint>
 #include <iostream>
 #include <sys/mman.h>
 #include <cstdlib>
 #include <snmalloc/snmalloc.h>
+#include <snmalloc/backend/fixedglobalconfig.h>
 
 #define PAGE_SIZE 0x1000
 #define NB_PAGES 4
-#define ALLOC_SIZE (PAGE_SIZE * NB_PAGES)
+#define ALLOC_SIZE (1 << 28)
+
+using namespace snmalloc;
+
+using CustomGlobals = FixedRangeConfig<PALNoAlloc<DefaultPal>>;
+using FixedAlloc = LocalAllocator<CustomGlobals>;
+
 
 void* mmap_region()
 {
@@ -30,5 +38,16 @@ int main(void)
   //  Allocator should go through snmalloc to alloc/dealloc objects from my_region. 
   //
   //  HOW DO I DO THAT WITHOUT WRITTING 10K lines of code?
+  DefaultPal::notify_using<NoZero>(my_region, ALLOC_SIZE);
+  CustomGlobals::init(nullptr, my_region, ALLOC_SIZE);
+  FixedAlloc allocator;
+
+  void* object = allocator.alloc(sizeof(int));
+  if (object == nullptr)
+    abort();
+  if ((uint64_t)(object) < (uint64_t)(my_region))
+    abort();
+  if ((uint64_t)(object) > ((uint64_t)(my_region) + ALLOC_SIZE))
+    abort();
   return 0;
 }
